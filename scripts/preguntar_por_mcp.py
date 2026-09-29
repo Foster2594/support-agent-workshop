@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ejercicio 5, segunda mitad: que OTRO agente use TU servidor MCP.
+"""Ejercicio 7, segunda mitad: que OTRO agente use TU servidor MCP.
 
 La API de Gemini se conecta sola a un servidor MCP remoto (Streamable HTTP,
 público): le pasas la URL de tu servicio y el modelo decide cuándo llamar

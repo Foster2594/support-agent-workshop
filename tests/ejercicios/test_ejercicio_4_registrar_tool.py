@@ -1,4 +1,4 @@
-"""BONUS — Registrar check_order_status (src/support_agent/tools/__init__.py).
+"""EJERCICIO 4 — Registrar check_order_status (src/support_agent/tools/__init__.py).
 
 Rojo mientras el tool no esté en el registry TOOLS.
 """

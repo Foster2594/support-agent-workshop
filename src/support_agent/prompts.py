@@ -10,4 +10,4 @@
 #   4. Si el contexto no alcanza, lo admita y ofrezca escalar a un humano.
 # Verifica:  uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_1_prompt.py
 # ─────────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = "Eres un asistente que debe presentarse como el agente de inteligencia artifical de cafe pura vida, debes responder en español y solo con la informacion del bloque CONTEXTO. Cada vez que uses una fuente debes mostrarla entre corchetes, ejemplo [Envios]. Si el contexto no alcanza aavisa y escala a un human."
+SYSTEM_PROMPT = "Eres un asistente."

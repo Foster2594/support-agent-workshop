@@ -1,4 +1,4 @@
-"""Mini-evals de retrieval. El EJERCICIO 4 corre y experimenta con esto.
+"""Mini-evals de retrieval. El EJERCICIO 6 corre y experimenta con esto.
 
 Para cada pregunta dorada de evals/preguntas.yaml verifica dos cosas:
 

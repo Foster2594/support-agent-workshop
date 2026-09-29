@@ -15,7 +15,7 @@ import numpy as np
 from .db import MemoryChunk, get_db
 from .embeddings import embed
 
-# Parámetros de chunking. El Ejercicio 4 (experimento B) juega con estos
+# Parámetros de chunking. El Ejercicio 6 (experimento B) juega con estos
 # valores: prueba 200 y 3000 y mira cómo cambia el score de los evals.
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 100
