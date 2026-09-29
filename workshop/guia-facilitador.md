@@ -1,18 +1,23 @@
 # Guía de Esteban
 
-Workshop de ~2 h 30, nivel introductorio, en dos actos:
+Workshop de ~3 h, nivel introductorio, en dos actos y siete ejercicios
+(ninguno es «bonus»: todos cuentan y todos tienen test rojo→verde):
 
-- **Acto 1 — RAG**: construir y encender el agente (Ejercicios 1–3 + bonus).
-- **Acto 2 — Medir y exponer**: evals (Ejercicio 4) y MCP (Ejercicio 5).
+- **Acto 1 — Construir**: prompt, RAG, KB y tools (Ejercicios 1–5). Cierra
+  con el agente completo: sabe quién es, busca en la KB y actúa.
+- **Acto 2 — Medir y exponer**: evals (Ejercicio 6) y MCP (Ejercicio 7).
 
 Las dos ideas que la gente debe llevarse (repítelas en el cierre):
 
 1. Un agente con RAG no es magia: trocear docs → guardar embeddings → buscar
    por similitud → inyectar en el prompt → loop de modelo + tools. Y no se
    mejora «a ojo»: se mide con evals.
-2. MCP no es magia: es el protocolo estándar para que CUALQUIER cliente
+2. Un tool son tres cosas (descripción, schema, handler) y una regla: el
+   modelo extrae los argumentos, el código decide. Precios, plazos y
+   políticas nunca los calcula el modelo.
+3. MCP no es magia: es el protocolo estándar para que CUALQUIER cliente
    consuma capacidades que tú construiste. El mismo `retrieve()` sirve al
-   agente por HTTP y a Claude por MCP. Y desplegar todo eso es un
+   agente por HTTP y a otro agente por MCP. Y desplegar todo eso es un
    `render.yaml`.
 
 ---
@@ -63,7 +68,7 @@ mientras los servicios están despiertos.
 - [ ] `npx @modelcontextprotocol/inspector` corre en tu máquina y conecta a
       tu deploy de referencia (`/mcp`).
 - [ ] `uv run python scripts/preguntar_por_mcp.py https://<tu-ref>.onrender.com/mcp`
-      contra tu referencia con el Ejercicio 5 resuelto: Gemini debe llamar
+      contra tu referencia con el Ejercicio 7 resuelto: Gemini debe llamar
       `buscar_kb` y responder con la KB. Es el wow de toda la sala.
 - [ ] La key de Gemini lista para compartirla por chat el día del workshop
       (los asistentes la pegan en su `.env` para el script). Bórrala en AI
@@ -93,7 +98,7 @@ mientras los servicios están despiertos.
 
 ---
 
-## Run sheet (2 h 30)
+## Run sheet (~3 h)
 
 Desde el minuto 0, en una terminal aparte:
 `uv run python scripts/keep_alive.py asistentes.txt`. Déjalo correr hasta el
@@ -102,21 +107,24 @@ cierre (y apágalo al terminar).
 | Reloj | Dur | Módulo | Nota |
 | --- | --- | --- | --- |
 | 0:00 | 15 min | Setup: rama + Action + crear Blueprint | Mientras deploya: dibujar la arquitectura |
-| 0:15 | 7 min | Demo del agente «tonto»: responde genérico, sin fuentes, alucina | Motivación de los ejercicios |
+| 0:15 | 7 min | Demo del agente «tonto»: sin fuentes, escala todo a un humano | Motivación de los ejercicios |
 | 0:22 | 10 min | Ejercicio 1: el system prompt | push → redeploy → comparar en vivo |
 | 0:32 | 15 min | Ejercicio 2: encender el RAG (TOP_K + ORDER BY) | El aha del Acto 1: aparecen las fuentes |
 | 0:47 | 10 min | Ejercicio 3: `kb/promociones.md` + ingesta idempotente | «La KB es solo markdown en git» |
-| 0:57 | 8 min | Bonus: registrar `check_order_status` | O de buffer si van atrasados |
-| 1:05 | 10 min | **Break** | El keep-alive evita que se duerman |
-| 1:15 | 25 min | Ejercicio 4: mini-evals + experimentos de top-k y chunking | «Sin evals, cambias a ciegas» |
-| 1:40 | 8 min | Intro a MCP: qué es, por qué existe, diagrama cliente/servidor | Anclar con lo que YA construyeron |
-| 1:48 | 30 min | Ejercicio 5: completar `buscar_kb` + Inspector + script de Gemini | El aha del Acto 2: otro agente usa SU RAG |
-| 2:18 | 12 min | Cierre: límites del patrón naive, teaser colas/Workflows, se llevan su rama | Exit ticket |
+| 0:57 | 8 min | Ejercicio 4: registrar `check_order_status` | Anatomía de un tool: descripción + schema + handler |
+| 1:05 | 20 min | Ejercicio 5: tu propio tool `calcular_envio` | «El modelo extrae, el código decide» |
+| 1:25 | 10 min | **Break** | El keep-alive evita que se duerman |
+| 1:35 | 30 min | Ejercicio 6: 2 preguntas doradas + experimentos de top-k y chunking | «Sin evals, cambias a ciegas» |
+| 2:05 | 8 min | Intro a MCP: qué es, por qué existe, diagrama cliente/servidor | Anclar con lo que YA construyeron |
+| 2:13 | 30 min | Ejercicio 7: completar `buscar_kb` + Inspector + script de Gemini | El aha del Acto 2: otro agente usa SU RAG |
+| 2:43 | 12 min | Cierre: límites del patrón naive, teaser colas/Workflows, se llevan su rama | Exit ticket |
 
-**Flex:** el bonus y el experimento B (chunking) del Ejercicio 4 son
-recortables. El Ejercicio 5 **nunca**: es la razón del enfoque MCP. Si el
-redeploy de Render va lento en el Ejercicio 5, que se conecten al server
-local (`http://localhost:3000/mcp`): desbloquea igual.
+**Flex:** ningún ejercicio es opcional. Si el grupo va lento, lo primero que
+se recorta es el experimento B (chunking) del Ejercicio 6 y el paso extra de
+MCP del 7 (exponer `calcular_envio`). El Ejercicio 7 en sí **nunca**: es la
+razón del enfoque MCP. Si el redeploy de Render va lento en el Ejercicio 7,
+que se conecten al server local (`http://localhost:3000/mcp`) con el
+Inspector: desbloquea igual.
 
 ---
 
@@ -174,24 +182,52 @@ https://<tu-ref>.onrender.com/api/ingest` dos veces seguidas → `ingresados:
 0`, cero llamadas de embedding. Si tienes el server local abierto, la versión
 vistosa: crea el archivo, `POST /api/ingest` → `ingresados: 1`, sin reiniciar.
 
-### Bonus (0:57)
+### Ejercicio 4 (0:57)
 
-Un tool = descripción + schema + handler; el agente solo ve el registry.
-«¿cómo va mi pedido CR-1003?» antes (no puede) y después (badge 🔧).
+Abre `check_order_status.py` en pantalla y señala las tres partes: la
+descripción (lo que el modelo lee para decidir), el schema (lo que tiene que
+extraer del mensaje) y el handler (código). Luego `tools/__init__.py`: el
+agente solo ve lo que está en `TOOLS`. «¿cómo va mi pedido CR-1003?» antes
+(no puede: se lo inventa o escala) y después (badge 🔧 y datos reales).
 
-### Ejercicio 4 (1:15)
+CFU: «¿qué pasa si la descripción dice “consulta pedidos” pero el schema
+no pide el número?» (el modelo llama al tool sin argumentos y falla: los
+tres pedazos tienen que coincidir).
 
-La lección más transferible del workshop: **sin evals, cambias a ciegas**.
-Corre la línea base en pantalla, luego `--top-k 1` y `--top-k 8`. Discusión:
-más k = más recall pero más tokens y más ruido. El experimento B (chunking)
-en parejas si hay tiempo. Cierra con: «¿qué combinación ganó y por qué?» —
-no hay respuesta única, ese es el punto: por eso se mide.
+### Ejercicio 5 (1:05)
+
+La lección más importante del Acto 1 y la más transferible a su trabajo:
+**el modelo extrae los argumentos; el código decide**. Antes del ejercicio,
+pregunta en tu referencia «¿cuánto me sale un pedido de ₡12.000 a
+Turrialba?»: el modelo lee `envios.md` y hace la cuenta; a veces acierta, a
+veces no, y nunca puedes garantizarlo. Después: badge 🔧 `calcular_envio`,
+₡2.500 y 2 a 3 días, siempre.
+
+Deja 12–14 minutos de trabajo. Los dos atascos típicos: (1) el handler
+devuelve bien pero el modelo no lo llama → la descripción no dice cuándo
+usarlo, o no está en `TOOLS`; (2) «Limón» no matchea → no normalizaron
+tildes (`_normalizar` ya viene hecho, hay que usarlo).
+
+Cierra con la pregunta que conecta con su vida real: «¿qué cálculo o
+política de su negocio hoy la está haciendo un modelo cuando debería
+hacerla código?».
+
+### Ejercicio 6 (1:35)
+
+**Sin evals, cambias a ciegas**. Corre la línea base en pantalla. Luego el
+entregable: cada quien agrega dos preguntas doradas (una de promociones) y
+vuelve a correr; si no aparecen, afinan la pregunta o el documento. Ese
+ciclo, escribir el caso → medir → ajustar, es el trabajo real de mantener un
+RAG. Después `--top-k 1` y `--top-k 8`. Discusión: más k = más recall pero
+más tokens y más ruido. El experimento B (chunking) en parejas. Cierra con:
+«¿qué combinación ganó y por qué?» — no hay respuesta única, ese es el
+punto: por eso se mide.
 
 Los evals corren en la laptop de cada quien. Sin key en su `.env` usan el
 mock (números de referencia abajo); con key, Gemini real y otros números.
 Lo que importa es comparar contra su propia línea base.
 
-### Intro a MCP (1:40)
+### Intro a MCP (2:05)
 
 Definición en una frase: *USB-C para capacidades de IA — un protocolo
 estándar entre clientes (Claude, IDEs, otros agentes) y servidores (tu
@@ -200,7 +236,7 @@ schemas; el cliente decide cuándo llamarlos leyendo las descripciones.
 Ancla: «ya tienen un servidor MCP corriendo en `/mcp` con 2 tools; falta el
 mejor: su retrieval».
 
-### Ejercicio 5 (1:48)
+### Ejercicio 7 (2:13)
 
 La joya. 4 líneas de código y luego la conexión. Orden recomendado: primero
 TODOS validan con el Inspector (garantizado); luego el wow para toda la sala
@@ -215,10 +251,14 @@ usando `buscar_kb` de su servicio, di la frase:
 > otro agente — y ustedes no escribieron ningún endpoint para él. Eso es lo
 > que estandariza MCP.»
 
+Si sobra tiempo, el paso extra: exponer `calcular_envio` por MCP (tres
+líneas) y preguntarle a Gemini por el script «¿cuánto cuesta enviar un pedido
+de 12000 a Limón?». El tool que escribieron en el 5 lo usa otro agente.
+
 Caveat para decir en voz alta: `/mcp` va sin auth (datos ficticios, solo
 lectura); en producción, OAuth/token.
 
-### Cierre (2:18)
+### Cierre (2:43)
 
 Límites del naive: timeouts, deploys que pierden trabajo en vuelo, sin
 concurrencia real (léelo del docstring de `server.py`). Y el límite de hoy:
@@ -299,17 +339,93 @@ El crédito por referidos no vence y acumula hasta ₡30.000 por año.
 - Diciembre: envío gratis en todos los pedidos, sin monto mínimo.
 ```
 
-### Ejercicio 4
+### Ejercicio 4 — `src/support_agent/tools/__init__.py`
 
-No tiene solución de código. Resultados de referencia con el mock (para que
-sepas qué esperar en pantalla):
+```python
+TOOLS: dict[str, Tool] = {
+    escalate_to_human.tool.name: escalate_to_human.tool,
+    check_order_status.tool.name: check_order_status.tool,
+}
+```
+
+### Ejercicio 5 — `src/support_agent/tools/calcular_envio.py`
+
+```python
+async def handler(canton: str, monto_pedido: int) -> dict:
+    zona = ZONAS.get(_normalizar(canton))
+    if zona is None:
+        return {
+            "error": (
+                f"No conozco el cantón {canton!r}. Zonas de envío: GAM (San José, "
+                "Heredia, Alajuela centro, Cartago centro), Regional (resto de "
+                "Alajuela y Cartago, Grecia, San Ramón, Turrialba, Puriscal) y "
+                "Extendida (Limón, Puntarenas, Guanacaste, Zona Sur y Zona Norte). "
+                "Pregunta al cliente por su cantón."
+            )
+        }
+    tarifa = TARIFAS[zona]
+    gratis = monto_pedido > ENVIO_GRATIS_DESDE
+    return {
+        "canton": canton,
+        "zona": zona,
+        "costo": 0 if gratis else tarifa["costo"],
+        "envio_gratis": gratis,
+        "dias_habiles": tarifa["dias_habiles"],
+    }
+
+
+tool = Tool(
+    name="calcular_envio",
+    description=(
+        "Cotiza el envío de un pedido de Café Pura Vida: dado el cantón de "
+        "entrega y el monto del pedido en colones, devuelve la zona (GAM, "
+        "Regional o Extendida), el costo del envío (0 si aplica envío gratis "
+        "por superar ₡25.000) y los días hábiles de entrega. Úsalo siempre que "
+        "el cliente pregunte cuánto cuesta o cuánto tarda un envío a un lugar "
+        "concreto; no calcules el costo tú mismo."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "canton": {
+                "type": "string",
+                "description": "Cantón o lugar de entrega, por ejemplo Heredia, Turrialba o Limón",
+            },
+            "monto_pedido": {
+                "type": "integer",
+                "description": "Monto del pedido en colones, sin puntos ni símbolos, por ejemplo 12000",
+            },
+        },
+        "required": ["canton", "monto_pedido"],
+    },
+    handler=handler,
+)
+```
+
+Y en `tools/__init__.py`, la tercera línea del registry:
+`calcular_envio.tool.name: calcular_envio.tool,`.
+
+### Ejercicio 6 — `evals/preguntas.yaml` (ejemplo de preguntas nuevas)
+
+```yaml
+- pregunta: "¿Cómo funciona el programa de referidos?"
+  fuente_esperada: kb/promociones.md
+
+- pregunta: "¿Qué molienda me recomiendan para prensa francesa?"
+  fuente_esperada: kb/productos.md
+```
+
+Resultados de referencia con el mock (para que sepas qué esperar en
+pantalla), con las 11 preguntas originales:
 
 - Estado inicial del repo (`TOP_K = 0`): `0/11 hits` — buen «antes».
 - Resuelto, `top_k=4`: `11/11 hits · 10/11 hit@1`.
 - `--top-k 1`: `10/11 hits · 10/11 hit@1` (menos recall).
 - `--top-k 8`: `11/11 hits` (igual, pero el CONTEXTO se duplica en tamaño).
+- Con las dos preguntas de ejemplo de arriba (13 en total): `13/13 hits ·
+  12/13 hit@1`.
 
-### Ejercicio 5 — `src/support_agent/mcp_server.py`
+### Ejercicio 7 — `src/support_agent/mcp_server.py`
 
 ```python
 @mcp.tool(
@@ -332,13 +448,15 @@ async def buscar_kb(pregunta: str, top_k: int = 4) -> list[dict]:
     ]
 ```
 
-### Bonus — `src/support_agent/tools/__init__.py`
+Paso extra del Ejercicio 7 (exponer `calcular_envio` por MCP):
 
 ```python
-TOOLS: dict[str, Tool] = {
-    escalate_to_human.tool.name: escalate_to_human.tool,
-    check_order_status.tool.name: check_order_status.tool,
-}
+from .tools import calcular_envio as calcular_envio_tool
+
+
+@mcp.tool(description=calcular_envio_tool.tool.description)
+async def calcular_envio(canton: str, monto_pedido: int) -> dict:
+    return await calcular_envio_tool.handler(canton=canton, monto_pedido=monto_pedido)
 ```
 
 ---

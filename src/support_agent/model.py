@@ -34,6 +34,9 @@ from .tools import Tool
 logger = logging.getLogger(__name__)
 
 ORDER_NUMBER_RE = re.compile(r"CR-\d+", re.IGNORECASE)
+# "¿cuánto cuesta el envío a Limón de un pedido de 12000?" (mock del Ej. 5)
+ENVIO_RE = re.compile(r"envio (?:a|para|hasta) ([a-z ]+?)(?:\s+(?:de|por|con)\b|[?,.!]|$)")
+MONTO_RE = re.compile(r"(\d{1,3}(?:[.,]\d{3})+|\d{4,})")
 
 
 @dataclass
@@ -101,6 +104,13 @@ def _chat_mock(messages: list[dict], tools: dict[str, Tool]) -> ModelReply:
         ])
 
     normalized = _normalize(user_text)
+    envio = ENVIO_RE.search(normalized)
+    if envio and "calcular_envio" in tools and ("cuesta" in normalized or "costo" in normalized or "sale" in normalized):
+        monto = MONTO_RE.search(normalized)
+        monto_int = int(monto.group(1).replace(".", "").replace(",", "")) if monto else 10_000
+        return ModelReply(tool_calls=[
+            ToolCall(name="calcular_envio", args={"canton": envio.group(1).strip(), "monto_pedido": monto_int})
+        ])
     if ("hablar con humano" in normalized or "queja" in normalized) and "escalate_to_human" in tools:
         return ModelReply(tool_calls=[
             ToolCall(name="escalate_to_human", args={"summary": user_text[:200]})

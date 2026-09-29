@@ -1,5 +1,6 @@
-"""El servidor MCP expone los 3 tools con schemas válidos (suite normal:
-no depende de que el Ejercicio 5 esté resuelto — solo lista, no llama)."""
+"""El servidor MCP expone los 3 tools base con schemas válidos (suite normal:
+no depende de que el Ejercicio 7 esté resuelto — solo lista, no llama). Si
+el asistente expone también calcular_envio (paso opcional), sigue verde."""
 
 from mcp.shared.memory import create_connected_server_and_client_session
 
@@ -12,7 +13,7 @@ async def test_tools_list_expone_los_tres_tools():
     ) as session:
         result = await session.list_tools()
         by_name = {t.name: t for t in result.tools}
-        assert set(by_name) == {"check_order_status", "escalate_to_human", "buscar_kb"}
+        assert {"check_order_status", "escalate_to_human", "buscar_kb"} <= set(by_name)
         for tool in by_name.values():
             assert tool.description
             assert tool.inputSchema.get("type") == "object"
