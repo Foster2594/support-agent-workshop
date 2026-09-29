@@ -8,8 +8,8 @@ expone su retrieval como **servidor MCP** para que Claude (o cualquier cliente
 MCP) lo consuma.
 
 El repo llega **deliberadamente incompleto**: deploya y responde, pero
-responde mal. Tu trabajo son 5 ejercicios (+1 bonus) que lo arreglan pieza
-por pieza — y cada arreglo se ve en vivo en tu servicio desplegado.
+responde mal. Tu trabajo son 7 ejercicios que lo arreglan pieza por pieza —
+y cada arreglo se ve en vivo en tu servicio desplegado.
 
 ```
                      ┌──────────────────────────────────────────┐
@@ -47,10 +47,10 @@ correría ahí, y el backend en memoria la imita. Cómo encenderlo: ver
   invitación como colaborador).
 - Cuenta en el workspace de Render de Esteban (te llegó una invitación).
 - Key de Gemini: tu servicio ya la toma del workspace. Para el script del
-  Ejercicio 5 (y para correr en local con Gemini real) la necesitas en tu
+  Ejercicio 7 (y para correr en local con Gemini real) la necesitas en tu
   `.env`: Esteban la comparte el día del workshop.
 - Para correr en local (opcional pero recomendado): Python ≥ 3.12, [`uv`](https://docs.astral.sh/uv/) y git.
-- Para el Ejercicio 5: Node.js ≥ 18 (`npx`) para el MCP Inspector. Gemini CLI
+- Para el Ejercicio 7: Node.js ≥ 18 (`npx`) para el MCP Inspector. Gemini CLI
   y Claude Code son opcionales.
 
 ## Paso 0 — Tu rama + Action `setup-attendee`
@@ -126,14 +126,15 @@ uv run pytest -m ejercicio   # rojos al inicio → verdes al completar
 | 1 | El system prompt: identidad, contexto, citas, escalamiento | `src/support_agent/prompts.py` | ~10 min |
 | 2 | Encender el RAG: `TOP_K` y el `ORDER BY` de la query | `src/support_agent/rag.py` | ~15 min |
 | 3 | Alimentar la KB: crea `kb/promociones.md` | `kb/` | ~10 min |
-| 4 | Medir con mini-evals: experimentos de top-k y chunking | `src/support_agent/evals.py` | ~25 min |
-| 5 | Exponer tu RAG por MCP: completa `buscar_kb` | `src/support_agent/mcp_server.py` | ~30 min |
-| ★ | Bonus: registra el tool de pedidos | `src/support_agent/tools/__init__.py` | ~5 min |
+| 4 | Registrar un tool existente: `check_order_status` | `src/support_agent/tools/__init__.py` | ~8 min |
+| 5 | Tu propio tool: `calcular_envio` (descripción, schema, handler) | `src/support_agent/tools/calcular_envio.py` | ~20 min |
+| 6 | Medir con mini-evals: 2 preguntas doradas + experimentos de top-k y chunking | `evals/preguntas.yaml`, `src/support_agent/evals.py` | ~30 min |
+| 7 | Exponer tu RAG por MCP: completa `buscar_kb` y que otro agente lo use | `src/support_agent/mcp_server.py` | ~30 min |
 
 ## Conecta tu servicio por MCP
 
 Tu servicio expone un servidor MCP en `/mcp` (transporte HTTP streamable).
-Con el Ejercicio 5 resuelto, tres formas de consumirlo, de la más segura a
+Con el Ejercicio 7 resuelto, tres formas de consumirlo, de la más segura a
 la más vistosa:
 
 **1. MCP Inspector** (sin cuenta, siempre funciona):

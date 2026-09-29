@@ -1,4 +1,4 @@
-"""EJERCICIO 5 — Exponer el RAG por MCP (src/support_agent/mcp_server.py).
+"""EJERCICIO 7 — Exponer el RAG por MCP (src/support_agent/mcp_server.py).
 
 Rojo mientras buscar_kb devuelva []. Ojo: también necesita el Ejercicio 2
 resuelto (buscar_kb usa el mismo retrieve()).

@@ -1,9 +1,12 @@
-# Preguntas doradas para los mini-evals de retrieval (Ejercicio 4).
+# Preguntas doradas para los mini-evals de retrieval (Ejercicio 6).
 # Cada entrada: la pregunta de un cliente y el documento de la KB que
 # DEBERÍA aparecer en el top-k del retrieval para poder responderla.
 #
-# Nota: la última pregunta solo se puede responder con kb/promociones.md,
+# Nota: la pregunta 11 solo se puede responder con kb/promociones.md,
 # que NO existe hasta que completes el Ejercicio 3.
+#
+# EJERCICIO 6: agrega al final DOS preguntas doradas nuevas (al menos una
+# sobre promociones). Formato: igual que las de arriba.
 
 - pregunta: "¿Cuánto cuesta el envío a Limón?"
   fuente_esperada: kb/envios.md

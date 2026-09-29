@@ -1,4 +1,4 @@
-"""Servidor MCP de Café Pura Vida. Aquí vive el EJERCICIO 5.
+"""Servidor MCP de Café Pura Vida. Aquí vive el EJERCICIO 7.
 
 Expone por Model Context Protocol (transporte HTTP streamable, montado en
 /mcp de la MISMA app FastAPI) las capacidades que ya construiste: los tools
@@ -62,7 +62,7 @@ async def escalate_to_human(summary: str) -> dict:
     return await escalate_to_human_tool.handler(summary=summary)
 
 
-# ────────────────────────── EJERCICIO 5 ──────────────────────────
+# ────────────────────────── EJERCICIO 7 ──────────────────────────
 # Este tool MCP debería exponer TU retrieval a cualquier cliente MCP
 # (Claude Code, Claude Desktop, el MCP Inspector...). Ahora mismo
 # devuelve una lista vacía. Complétalo:
@@ -74,7 +74,7 @@ async def escalate_to_human(summary: str) -> dict:
 # Fíjate cómo check_order_status (aquí arriba) envuelve su handler:
 # es el mismo patrón. La descripción del tool importa: es lo que el
 # cliente MCP lee para decidir cuándo usarlo.
-# Verifica:  uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_5_mcp.py
+# Verifica:  uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_7_mcp.py
 # ─────────────────────────────────────────────────────────────────
 @mcp.tool(
     description=(

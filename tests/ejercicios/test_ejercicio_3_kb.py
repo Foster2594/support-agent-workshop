@@ -25,6 +25,7 @@ def test_el_archivo_existe_y_tiene_sustancia():
 
 
 def test_se_chunkea():
+    assert PROMO.exists(), "Crea kb/promociones.md (Ejercicio 3)."
     text = PROMO.read_text(encoding="utf-8")
     assert len(chunk_markdown(text, "kb/promociones.md")) >= 1
 

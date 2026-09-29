@@ -4,6 +4,18 @@ Regla del juego: tu rama recién creada **deploya verde y el chat responde,
 pero responde mal**. Cada ejercicio arregla una pieza, y el cambio se ve en tu
 servicio desplegado (edita → commit → push → Render redeploya).
 
+Son siete, en este orden, y todos cuentan:
+
+| # | Ejercicio | Acto |
+| --- | --- | --- |
+| 1 | Dale identidad al agente (system prompt) | 1 · Construir |
+| 2 | Enciende el RAG | 1 · Construir |
+| 3 | Alimenta la base de conocimiento | 1 · Construir |
+| 4 | Registra un tool existente | 1 · Construir |
+| 5 | Construye tu propio tool | 1 · Construir |
+| 6 | Mide tu RAG con mini-evals | 2 · Medir y exponer |
+| 7 | Expón tu RAG por MCP | 2 · Medir y exponer |
+
 Tu progreso, en cualquier momento:
 
 ```bash
@@ -22,7 +34,8 @@ sepa cuándo rendirse.
 
 El `SYSTEM_PROMPT` actual es `"Eres un asistente."` — con eso el modelo no
 tiene identidad, ignora el bloque `CONTEXTO` que el agente le inyecta (mira
-`agent.py`), no cita fuentes y nunca escala. Reescríbelo para que el agente:
+`agent.py`), no cita fuentes y, sin información, escala todo a un humano.
+Reescríbelo para que el agente:
 
 1. Se presente como agente de soporte de **Café Pura Vida**, en español.
 2. Responda **SOLO** con información del bloque `CONTEXTO`.
@@ -36,7 +49,7 @@ uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_1_prompt.py
 ```
 
 Y en la UI (tras el push): pregunta algo fuera de la KB («¿venden té?») y
-mira si lo admite en vez de inventar.
+mira si lo admite en vez de inventar. Todavía sin fuentes: eso viene en el 2.
 
 <details><summary>Pista 1</summary>
 Mira cómo <code>agent.py</code> arma el mensaje de sistema:
@@ -137,7 +150,7 @@ título, secciones <code>##</code>, datos específicos.
 </details>
 
 <details><summary>Pista 2</summary>
-Si el retrieval no lo encuentra, usa las palabras que la gente preguntarían
+Si el retrieval no lo encuentra, usa las palabras que la gente preguntaría
 («descuento», «primera compra», «referidos») en el texto del documento. Si
 el archivo está en tu rama pero el servicio no lo ve, revisa en los logs de
 Render que el último deploy sea el de tu push.
@@ -145,15 +158,105 @@ Render que el último deploy sea el de tu push.
 
 ---
 
-## Ejercicio 4 — Mide tu RAG con mini-evals (~25 min)
+## Ejercicio 4 — Registra un tool existente (~8 min)
 
-**Archivos:** `src/support_agent/evals.py`, `evals/preguntas.yaml`
+**Archivo:** `src/support_agent/tools/__init__.py`
+**Objetivo:** ver que un tool son tres cosas (nombre + schema + handler) y un
+registro, y que el agente solo puede usar lo que está registrado.
+
+`check_order_status` ya está implementado (léelo completo en
+`check_order_status.py`: descripción, schema JSON de parámetros y handler)
+pero nadie lo registró en `TOOLS`, así que el agente no puede consultar
+pedidos. Agrégalo al registry.
+
+**Verifica:**
+
+```bash
+uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_4_registrar_tool.py
+```
+
+Y en la UI: «¿cómo va mi pedido CR-1003?» → badge 🔧 `check_order_status` y
+el estado real del pedido. Antes del push, el agente no tenía forma de
+saberlo.
+
+<details><summary>Pista</summary>
+Una línea, idéntica a la de <code>escalate_to_human</code> que está justo
+arriba.
+</details>
+
+---
+
+## Ejercicio 5 — Construye tu propio tool (~20 min)
+
+**Archivos:** `src/support_agent/tools/calcular_envio.py` y
+`src/support_agent/tools/__init__.py`
+**Objetivo:** escribir un tool de cero: la descripción que el modelo lee, el
+schema de los argumentos que tiene que extraer, y el handler que hace el
+trabajo. Y la regla de oro: **el modelo extrae los argumentos; el precio y
+el plazo los calcula el código, nunca el modelo.**
+
+Vas a crear `calcular_envio(canton, monto_pedido)`. Hoy, si un cliente
+pregunta «¿cuánto me sale un pedido de ₡12.000 a Turrialba?», el agente lee
+`envios.md` y hace la cuenta él mismo: a veces bien, a veces no. Con el tool,
+el modelo solo tiene que reconocer el cantón y el monto, y el código responde
+con la zona, el costo (con la regla de envío gratis) y los días hábiles.
+
+El archivo `calcular_envio.py` ya trae la tabla de zonas, las tarifas y una
+función para normalizar tildes. Te falta:
+
+- **(a)** El `handler`: busca la zona del cantón, aplica la tarifa, decide si
+  el envío es gratis (pedidos superiores a ₡25.000) y devuelve un dict con
+  `canton`, `zona`, `costo`, `envio_gratis` y `dias_habiles`. Si el cantón
+  no está en la tabla, devuelve `{"error": "..."}` explicando qué zonas
+  existen: ese texto es lo que el modelo usará para preguntarle al cliente.
+- **(b)** El `tool`: una descripción útil (qué hace, cuándo usarlo, qué
+  devuelve) y el schema JSON con `canton` (string) y `monto_pedido`
+  (integer, colones), ambos requeridos y cada uno con su `description`.
+- **(c)** Registrarlo en `TOOLS`, como en el Ejercicio 4.
+
+**Verifica:**
+
+```bash
+uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_5_tool_propio.py
+```
+
+Y en la UI, tras el push: «¿cuánto me sale un pedido de ₡12.000 a
+Turrialba?» → badge 🔧 `calcular_envio` y una respuesta con ₡2.500 y 2 a 3
+días hábiles. Prueba también un monto grande («un pedido de ₡40.000 a
+Limón») y un cantón que no exista.
+
+<details><summary>Pista 1 (handler)</summary>
+<code>ZONAS.get(_normalizar(canton))</code> te da la zona o <code>None</code>.
+Con la zona, <code>TARIFAS[zona]</code> trae costo y días. El envío es gratis
+si <code>monto_pedido &gt; ENVIO_GRATIS_DESDE</code>.
+</details>
+
+<details><summary>Pista 2 (descripción y schema)</summary>
+Copia la forma de <code>check_order_status.py</code>. La descripción es un
+párrafo para el modelo: «Cotiza el envío… dado el cantón y el monto…
+devuelve zona, costo y días hábiles. Úsalo cuando el cliente pregunte cuánto
+cuesta o cuánto tarda un envío». Cada parámetro con
+<code>"type"</code> y <code>"description"</code>, y ambos en
+<code>"required"</code>.
+</details>
+
+<details><summary>Pista 3 (¿por qué no lo llama?)</summary>
+Si el modelo responde con la cuenta hecha «a mano» en vez de llamar al tool,
+casi siempre es la descripción: dile explícitamente cuándo usarlo. Y revisa
+que esté en <code>TOOLS</code>: el modelo solo ve lo registrado.
+</details>
+
+---
+
+## Ejercicio 6 — Mide tu RAG con mini-evals (~30 min)
+
+**Archivos:** `evals/preguntas.yaml`, `src/support_agent/evals.py`
 **Objetivo:** interiorizar que un RAG no se mejora «a ojo»: sin evals no
 sabes si tu cambio ayudó o empeoró.
 
-Aquí no hay código roto: es un ejercicio de **experimentación**. El runner
-toma ~11 preguntas doradas (`evals/preguntas.yaml`) y mide si el documento
-esperado aparece en el top-k (*hit*) y si aparece de primero (*hit@1*).
+El runner toma las preguntas doradas de `evals/preguntas.yaml` y mide si el
+documento esperado aparece en el top-k del retrieval (*hit*) y si aparece de
+primero (*hit@1*).
 
 1. **Línea base:**
 
@@ -161,7 +264,18 @@ esperado aparece en el top-k (*hit*) y si aparece de primero (*hit@1*).
    uv run python -m support_agent.evals
    ```
 
-2. **Experimento A — top-k:**
+2. **Tu entregable: dos preguntas doradas nuevas.** Agrega al final de
+   `evals/preguntas.yaml` dos preguntas que un cliente real haría, con su
+   `fuente_esperada`. Al menos una debe responderse con tu
+   `kb/promociones.md` del Ejercicio 3. Vuelve a correr los evals: ¿las
+   encuentra? Si no, ajusta la pregunta (o el documento) hasta que sí.
+   Eso es exactamente lo que hace un equipo de verdad con su set dorado.
+
+   ```bash
+   uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_6_evals.py
+   ```
+
+3. **Experimento A — top-k:**
 
    ```bash
    uv run python -m support_agent.evals --top-k 1
@@ -171,24 +285,30 @@ esperado aparece en el top-k (*hit*) y si aparece de primero (*hit@1*).
    ¿Cómo cambian *hits* y *hit@1*? ¿Qué costo tiene subir k? (más tokens de
    contexto, más ruido para el modelo — mira el tamaño del bloque CONTEXTO).
 
-3. **Experimento B — chunking:** en `rag.py`, cambia `CHUNK_SIZE` (800 → 200,
+4. **Experimento B — chunking:** en `rag.py`, cambia `CHUNK_SIZE` (800 → 200,
    luego → 3000) y `CHUNK_OVERLAP`. Para re-ingestar con el chunking nuevo
    basta reiniciar: en local, reinicia el server (el índice en memoria
    arranca vacío); en Render, el push redeploya y re-ingesta solo. Usa
    `GET /api/debug/search?q=...` para VER los chunks que regresan con cada
    configuración. **Al final regresa a 800/100.**
 
-4. Pregunta de cierre: ¿qué combinación dio el mejor score y por qué crees?
+5. Pregunta de cierre: ¿qué combinación dio el mejor score y por qué crees?
 
-Este ejercicio no tiene test rojo→verde: su verificación es el score y la
-discusión. Los evals corren en tu máquina: sin `GEMINI_API_KEY` en tu `.env`
-usan los embeddings mock (los números de referencia de la guía son con mock);
-con la key usan Gemini de verdad y los números cambian — compara siempre
-contra TU línea base.
+Los evals corren en tu máquina: sin `GEMINI_API_KEY` en tu `.env` usan los
+embeddings mock (los números de referencia de la guía son con mock); con la
+key usan Gemini de verdad y los números cambian — compara siempre contra TU
+línea base.
+
+<details><summary>Pista (mis preguntas no aparecen)</summary>
+Con el mock, el retrieval es por palabras compartidas: usa en la pregunta
+palabras que estén en el documento («referidos», «primera compra», «prensa
+francesa»). Con Gemini real es semántico y perdona más, pero la lección es la
+misma: el set dorado se afina.
+</details>
 
 ---
 
-## Ejercicio 5 — Expón tu RAG por MCP (~30 min)
+## Ejercicio 7 — Expón tu RAG por MCP (~30 min)
 
 **Archivo:** `src/support_agent/mcp_server.py`
 **Objetivo:** que cualquier cliente MCP use TU retrieval.
@@ -207,7 +327,7 @@ Fíjate cómo `check_order_status` envuelve su handler: es el mismo patrón.
 **Verifica:**
 
 ```bash
-uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_5_mcp.py
+uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_7_mcp.py
 ```
 
 **Segunda mitad — que otro agente use tu servidor.** Con el push hecho y tu
@@ -229,9 +349,14 @@ servicio despierto:
    (cuenta de pago). Comandos en el
    [README](../README.md#conecta-tu-servicio-por-mcp).
 
-El aha: el mismo `retrieve()` que arreglaste en el Ejercicio 2 ahora lo
-consume otro agente **sin que escribieras un solo endpoint específico para
-él**. Eso es lo que estandariza MCP.
+**Paso extra (opcional): expón también tu `calcular_envio`.** Tres líneas en
+`mcp_server.py` con el mismo patrón de `check_order_status`, push, y
+pregúntale a Gemini por el script «¿cuánto cuesta enviar un pedido de 12000
+a Limón?». Tu tool del Ejercicio 5 ahora lo usa otro agente.
+
+El aha: el mismo `retrieve()` que arreglaste en el Ejercicio 2 (y el tool
+que escribiste en el 5) ahora los consume otro agente **sin que escribieras
+un solo endpoint específico para él**. Eso es lo que estandariza MCP.
 
 <details><summary>Pista 1</summary>
 La solución cabe en 4 líneas: un <code>await retrieve(...)</code> y un list
@@ -250,30 +375,4 @@ servicio estaba dormido (free tier), ábrelo en el navegador para despertarlo
 y reintenta. El script de Gemini necesita la URL pública (no localhost); el
 Inspector y Claude Code sí pueden usar <code>http://localhost:3000/mcp</code>
 si el redeploy de Render va lento.
-</details>
-
----
-
-## Bonus — Registra el tool de pedidos (~5 min)
-
-**Archivo:** `src/support_agent/tools/__init__.py`
-**Objetivo:** ver que un tool son tres cosas (nombre + schema + handler) y un
-registro.
-
-`check_order_status` ya está implementado (míralo en
-`check_order_status.py`) pero nadie lo registró en `TOOLS`, así que el agente
-no puede consultar pedidos. Agrégalo al registry.
-
-**Verifica:**
-
-```bash
-uv run pytest -m ejercicio tests/ejercicios/test_bonus_tool.py
-```
-
-Y en la UI: «¿cómo va mi pedido CR-1003?» → badge 🔧 `check_order_status` y
-el estado real del pedido.
-
-<details><summary>Pista</summary>
-Una línea, idéntica a la de <code>escalate_to_human</code> que está justo
-arriba.
 </details>
