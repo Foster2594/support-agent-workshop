@@ -10,4 +10,4 @@
 #   4. Si el contexto no alcanza, lo admita y ofrezca escalar a un humano.
 # Verifica:  uv run pytest -m ejercicio tests/ejercicios/test_ejercicio_1_prompt.py
 # ─────────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = "Eres un asistente."
+SYSTEM_PROMPT = "Eres un agente de Soporte de Café Pura Vida. Responde únicamente con información del bloque CONTEXTO, citando la fuente entre corchetes, p. ej. [Envíos]. Si el contexto no es suficiente para responder, admítelo y ofrece escalar a un humano."
